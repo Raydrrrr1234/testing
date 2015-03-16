@@ -4,8 +4,9 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include <readline/readline.h>
-
+#include <unistd.h>
+#include <errno.h>
+#include "restart.h"
 #define MAXLINES 5000 
 char *lineptr[MAXLINES]; 
 
@@ -16,13 +17,15 @@ int numcmp(char *, char *);
 int main(int argn, char **argv) {
 	int nlines;
 	int numeric = 0;
-	
+	int fd;
+	// This is the part that I am not familiar now!!!
+	if((fd = open("./data", O_RDWR )) == -1 && errno == EINTR)
+		perror("Failed to open the file, please create the sort list in ./data");
 	if(argn > 1 && strcmp(argv[1], "-n") == 0)
 		numeric = 0;
-	
-	if((nlines = readlines(lineptr, MAXLINES)) >= 0) {
+	if((nlines = readline(fd, lineptr, MAXLINES)) >= 0) {
 		qsort((void**) lineptr, 0, nlines-1, (int (*)(void *, void *))(numeric ? numcmp : strcmp));
-		writelines(lineptr, nlines);
+		writeline(fd, lineptr, nlines);
 		return 0;
 	}
 	else {
