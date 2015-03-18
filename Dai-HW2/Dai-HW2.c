@@ -37,6 +37,7 @@ int main (int argc, char *argv) {
 #endif
 #ifdef DEBUG
 int main(int argn, char **argv) {
+	system(argv[1]);
 	system("outputIDs");
 	return 0;
 }
@@ -49,7 +50,9 @@ int system(const char *command) {
 	char **argv;
 	// The delimiters that seperate the command
 	char delim[] = " \t";
- 
+#ifdef DEBUG
+fprintf(stderr, "%s\n", command);
+#endif 
 	if ((argn = makeargv(command, delim, &argv)) <= 0) {
 		fprintf(stderr, "Failed to construct an argument array\n");
 		return -1;
@@ -64,8 +67,6 @@ int system(const char *command) {
 void freemakeargv(int argn, char **argv) {
 	if (argv == NULL)
 		return;
-	while (argn != 0)
-		free(argv[--argn]);
 	free(argv);
 }
 int makeargv(const char * command, const char *delimiters, char ***argvp) {
@@ -76,6 +77,7 @@ int makeargv(const char * command, const char *delimiters, char ***argvp) {
 	int error;
 	char *command_t;
 	char **argv;
+	int i;
 	// Input error checking
 	if ((command == NULL) || (delimiters == NULL) || (argvp == NULL)) {
 		errno = EINVAL;
@@ -106,13 +108,8 @@ int makeargv(const char * command, const char *delimiters, char ***argvp) {
 	else {
 	// Insert pointers to tokens into the argument array 
 		argv[0] = strtok_r(command_t, delimiters,&lasts);
-		for (int i = 1; i < argn; i++) {
-			char *arg = strtok_r(NULL, delimiters,&lasts);
-			if ((argv[i] = (char*)malloc(sizeof(char)*strlen(arg)+1)) == NULL) {
-				printf("Not enough memory!!(system function)");
-				return -1;
-			}
-			strcpy(argv[i],arg);
+		for (i = 1; i < argn; i++) {
+			argv[i] = strtok_r(NULL, delimiters,&lasts);
 		}
 		// put in a finall NULL pointer
 		argv[argn] = NULL;
