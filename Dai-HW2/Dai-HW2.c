@@ -51,13 +51,17 @@ int system(const char *command) {
 	// The delimiters that seperate the command
 	char delim[] = " \t";
 #ifdef DEBUG
-fprintf(stderr, "%s\n", command);
+	fprintf(stderr, "%s\n", command);
 #endif 
 	if ((argn = makeargv(command, delim, &argv)) <= 0) {
 		fprintf(stderr, "Failed to construct an argument array\n");
 		return -1;
 	} 
-	
+#ifdef DEBUG
+	for (i = 0; i < argn; i++) {
+		fprintf(stderr, "%s\n", argv[i]);
+	}
+#endif	
 	if (execvp(argv[0],argv+1) == -1) 
 		errorInfo(errno);
 	// Free memories in heap
