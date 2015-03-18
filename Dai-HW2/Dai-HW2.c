@@ -49,7 +49,7 @@ int system(const char *command) {
 	// The vector of argments in the command
 	char **argv;
 	// The delimiters that seperate the command
-	char delim[] = " ";
+	char delim[] = " \t";
 #ifdef DEBUG
 	fprintf(stderr, "%s\n", command);
 #endif 
@@ -57,11 +57,7 @@ int system(const char *command) {
 		fprintf(stderr, "Failed to construct an argument array\n");
 		return -1;
 	} 
-#ifdef DEBUG
-	for (i = 0; i < argn; i++) {
-		fprintf(stderr, "%s\n", argv[i]);
-	}
-#endif	
+
 	if (execvp(argv[0],argv+1) == -1) 
 		errorInfo(errno);
 	// Free memories in heap
