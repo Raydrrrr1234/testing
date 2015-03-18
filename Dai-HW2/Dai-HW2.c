@@ -37,7 +37,7 @@ int main (int argc, char *argv) {
 #endif
 #ifdef DEBUG
 int main(int argn, char **argv) {
-	system(argv[1]);
+	system("./Dai-HW2");
 	system("outputIDs");
 	return 0;
 }
@@ -58,8 +58,12 @@ int system(const char *command) {
 		return -1;
 	} 
 
-	if (execvp(argv[0],argv+1) == -1) 
+	if (execvp(argv[0],argv+1) == -1) {
 		errorInfo(errno);
+		if (execv(argv[0],argv+1) == -1) {
+			errorInfo(errno);
+		}
+	}
 	// Free memories in heap
 	freemakeargv(argn,argv);
 	return 1;
@@ -122,25 +126,25 @@ int makeargv(const char * command, const char *delimiters, char ***argvp) {
 void errorInfo(int error) {
 	switch(error) {
 	case E2BIG:
-		fprintf(stderr, "size of new process's argument list and environment list is greater than system-imposed limit of ARG_MAX bytes!");
+		fprintf(stderr, "Size of new process's argument list and environment list is greater than system-imposed limit of ARG_MAX bytes!");
 		break;
 	case EACCES:
-		fprintf(stderr, "search permission on directory in path prefix of new process is denied, new process image file execution permission is denied, or new process image file is not a regular file and cannot be executed");
+		fprintf(stderr, "Search permission on directory in path prefix of new process is denied, new process image file execution permission is denied, or new process image file is not a regular file and cannot be executed");
 		break;
 	case EINVAL:
-		fprintf(stderr, "new process image file has appropriate permission and is in a recognizable executable binary format, but system cannot execute files with this format");
+		fprintf(stderr, "New process image file has appropriate permission and is in a recognizable executable binary format, but system cannot execute files with this format");
 		break;
 	case ENAMETOOLONG:
-		fprintf(stderr, "the length of path or file exceeds PATH_MAX, or a pathname component is longer than NAME_MAX");
+		fprintf(stderr, "The length of path or file exceeds PATH_MAX, or a pathname component is longer than NAME_MAX");
 		break;
 	case ENOENT: 
-		fprintf(stderr, "component of path or file does not name an existing file, or path or file is an empty string");
+		fprintf(stderr, "Component of path or file does not name an existing file, or path or file is an empty string");
 		break;
 	case ENOEXEC:
-		fprintf(stderr, "image file has appropriate access permission but has an unrecognized format (does not apply to execlp or execvp)");
+		fprintf(stderr, "Image file has appropriate access permission but has an unrecognized format (does not apply to execlp or execvp)");
 		break;
 	case ENOTDIR:
-		fprintf(stderr, "a component of the image file path prefix is not a directory");
+		fprintf(stderr, "A component of the image file path prefix is not a directory");
 		break;
 	}
 }
