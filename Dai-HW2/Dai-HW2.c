@@ -49,7 +49,7 @@ int system(const char *command) {
 	// The vector of argments in the command
 	char **argv;
 	// The delimiters that seperate the command
-	char delim[] = " \t";
+	char delim[] = " ";
 #ifdef DEBUG
 	fprintf(stderr, "%s\n", command);
 #endif 
@@ -110,7 +110,8 @@ int makeargv(const char * command, const char *delimiters, char ***argvp) {
 		return -1;
 	}
 	else {
-	// Insert pointers to tokens into the argument array 
+		// Insert pointers to tokens into the argument array 
+		strcpy(command_t, command);
 		argv[0] = strtok_r(command_t, delimiters,&lasts);
 		for (i = 1; i < argn; i++) {
 			argv[i] = strtok_r(NULL, delimiters,&lasts);
