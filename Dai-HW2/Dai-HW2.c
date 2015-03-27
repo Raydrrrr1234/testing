@@ -139,6 +139,7 @@ void restoreFilePointers() {
 void freemakeargv(int argn, char **argv) {
 	if (argv == NULL)
 		return;
+	free(argv[0]);
 	free(argv);
 }
 // The function that separated command to a vector
@@ -192,7 +193,6 @@ int makeargv(const char * command, const char *delimiters, char ***argvp) {
 		// put in a finall NULL pointer
 		argv[argn] = NULL;
 	}
-	free(command_t);
 	*argvp = argv;
 	return argn;
 }
