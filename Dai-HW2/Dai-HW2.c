@@ -13,11 +13,17 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
+// Declaration of functions
 int system(const char *command);
 int makeargv(const char * command, const char *delimiters, char ***argvp);
 void freemakeargv(int argn, char **argv);
 void errorInfo(int error);
+void ignoreSignal();
+void restoreSignal();
+void restoreFilePointers();
 
+// The signal controling variable
+struct sigaction act, old_act;
 // The pid_t variable to distinguish parent and child
 pid_t pID;
 
@@ -43,7 +49,7 @@ int main (int argc, char *argv) {
 	return 0;
 }
 #endif
-#ifdef DEBUG
+#ifdef DEBUG_systemfc
 int main(int argn, char **argv) {
 	fclose(stdin);
 	fclose(stdout);
@@ -52,29 +58,6 @@ int main(int argn, char **argv) {
 	return 0;
 }
 #endif
-// The signal controling variable
-struct sigaction act, old_act;
-// The Ctrl-c Signal ignore function
-void ignoreSignal() {
-	// Find current SIGINT handler
-	if (sigaction(SIGINT, NULL, &old_act) == -1)
-		perror("Failed to get old handler for SIGINT");
-	// Set new SIGINT handler to ignore
-	act.sa_handler = SIG_IGN;
-	if (sigaction(SIGINT, &act, NULL) == -1)
-	    	perror("Failed to ignore");
-}
-// The Ctrl-c Signal restore function
-void restoreSignal() {
-	if (sigaction(SIGINT, &old_act, NULL) == -1)
-	    	perror("Failed to restore");
-}
-// The function to restore file pointers
-void restoreFilePointers() {
-	freopen("/dev/tty","a+b",stdout);
-	freopen("/dev/tty","a+b",stderr);
-	freopen("/dev/tty","a+b",stdin);
-}
 
 // This is a function simulate the system function
 // Take one string command argument to excute it in shell
@@ -127,6 +110,30 @@ int system(const char *command) {
 	// Free memories in heap
 	freemakeargv(argn,argv);
 	return 0;
+}
+// The Ctrl-c Signal ignore function
+void ignoreSignal() {
+	// Find current SIGINT handler
+	if (sigaction(SIGINT, NULL, &old_act) == -1)
+		perror("Failed to get old handler for SIGINT");
+	// Set new SIGINT handler to ignore
+	act.sa_handler = SIG_IGN;
+	if (sigaction(SIGINT, &act, NULL) == -1)
+	    	perror("Failed to ignore");
+}
+// The Ctrl-c Signal restore function
+void restoreSignal() {
+	if (sigaction(SIGINT, &old_act, NULL) == -1)
+	    	perror("Failed to restore");
+}
+// The function to restore file pointers
+void restoreFilePointers() {
+	fclose(stdin);
+	fclose(stdout);
+	fclose(stderr);
+	freopen("/dev/tty","a+b",stdout);
+	freopen("/dev/tty","a+b",stderr);
+	freopen("/dev/tty","a+b",stdin);
 }
 // Implementation of freemakeargv varibles in heap
 void freemakeargv(int argn, char **argv) {
