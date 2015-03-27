@@ -1,4 +1,4 @@
-/* Dai-HW2.c-- Implementation of stdlib.h
+/* Dai-HW2.c-- Implementation of stdlib.h with execv()
 	int system(const char *command)
    AUTHOR:Ruikang Dai
    DATE:Sat Feb 28 16:54:03 EST 2015
@@ -8,10 +8,18 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
 int system(const char *command);
 int makeargv(const char * command, const char *delimiters, char ***argvp);
 void freemakeargv(int argn, char **argv);
 void errorInfo(int error);
+
+// The pid_t variable to distinguish parent and child
+pid_t pID;
 
 #ifdef DEBUG_makeargv
 int main (int argc, char *argv) {
@@ -37,11 +45,40 @@ int main (int argc, char *argv) {
 #endif
 #ifdef DEBUG
 int main(int argn, char **argv) {
-	system("./Dai-HW2");
-	system("outputIDs");
+	fclose(stdin);
+	fclose(stdout);
+	fclose(stderr);
+	system("deadlock");
 	return 0;
 }
 #endif
+// The signal controling variable
+struct sigaction act, old_act;
+// The Ctrl-c Signal ignore function
+void ignoreSignal() {
+	// Find current SIGINT handler
+	if (sigaction(SIGINT, NULL, &old_act) == -1)
+		perror("Failed to get old handler for SIGINT");
+	// Set new SIGINT handler to ignore
+	act.sa_handler = SIG_IGN;
+	if (sigaction(SIGINT, &act, NULL) == -1)
+	    	perror("Failed to ignore");
+}
+// The Ctrl-c Signal restore function
+void restoreSignal() {
+	if (sigaction(SIGINT, &old_act, NULL) == -1)
+	    	perror("Failed to restore");
+}
+// The function to restore file pointers
+void restoreFilePointers() {
+	freopen("/dev/tty","a+b",stdout);
+	freopen("/dev/tty","a+b",stderr);
+	freopen("/dev/tty","a+b",stdin);
+}
+
+// This is a function simulate the system function
+// Take one string command argument to excute it in shell
+// return 0, if success, otherwise return -1
 int system(const char *command) {
 	int i;
 	// The number of argments in the command
@@ -50,29 +87,58 @@ int system(const char *command) {
 	char **argv;
 	// The delimiters that seperate the command
 	char delim[] = " \t";
-#ifdef DEBUG
-	fprintf(stderr, "%s\n", command);
-#endif 
+	
 	if ((argn = makeargv(command, delim, &argv)) <= 0) {
 		fprintf(stderr, "Failed to construct an argument array\n");
 		return -1;
 	} 
-
-	if (execvp(argv[0],argv+1) == -1) {
-		errorInfo(errno);
-		if (execv(argv[0],argv+1) == -1) {
+	// Ignore interrupt signal
+	ignoreSignal();
+	// back file Descriptors
+	// backupFileDescriptors();
+	pID = fork();
+	// Child process
+	if (pID == 0) {
+		// Restore in child process
+		restoreSignal();
+		restoreFilePointers();
+		// Start to excute program
+		if (execvp(argv[0],argv) == -1) {
 			errorInfo(errno);
+			fprintf(stderr, "\nGive up execvp and try execv\n");
+			if (execv(argv[0],argv) == -1) {
+				errorInfo(errno);
+				fprintf(stderr,"\nI cannot handle this\n");
+			}
 		}
 	}
+	// Parent process wait child process
+	else if (pID > 0) {
+		int childpid = wait(NULL);
+		if (childpid == -1)
+			perror("Failed to wait for child");
+	}
+	else { 
+		fprintf(stderr,"fork() failed!");
+		return -1;
+	}
+	// Restore interrupt signal
+	restoreSignal();
 	// Free memories in heap
 	freemakeargv(argn,argv);
-	return 1;
+	return 0;
 }
+// Implementation of freemakeargv varibles in heap
 void freemakeargv(int argn, char **argv) {
 	if (argv == NULL)
 		return;
 	free(argv);
 }
+// The function that separated command to a vector
+// const char * command: the input command string
+// const char * delimiters: the characters that separates the variables
+// char ***argvp: the vector pointer of arguments
+// return the number of arguments if success, otherwise return -1
 int makeargv(const char * command, const char *delimiters, char ***argvp) {
 	// strtok_r thread safety argument
 	char *lasts;
@@ -123,6 +189,7 @@ int makeargv(const char * command, const char *delimiters, char ***argvp) {
 	*argvp = argv;
 	return argn;
 }
+// The error information if exec function returns
 void errorInfo(int error) {
 	switch(error) {
 	case E2BIG:
@@ -145,6 +212,9 @@ void errorInfo(int error) {
 		break;
 	case ENOTDIR:
 		fprintf(stderr, "A component of the image file path prefix is not a directory");
+		break;
+	default:
+		fprintf(stderr, "I don't know what's wrong.");
 		break;
 	}
 }
