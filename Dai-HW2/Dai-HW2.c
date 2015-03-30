@@ -1,5 +1,6 @@
 /* Dai-HW2.c-- Implementation of stdlib.h with execv()
 	int system(const char *command)
+	Tested on : Mac os/Fedora
    AUTHOR:Ruikang Dai
    DATE:Sat Feb 28 16:54:03 EST 2015
 */
