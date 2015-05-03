@@ -1,4 +1,5 @@
-#include "FS.h" //自己的头文件
+#include "FS.h"
+
 int main( void )
 {
 	int flag,len;
@@ -9,37 +10,45 @@ int main( void )
 	char path[1025];
 
 	int free_cluster,free_index;
+    
+    // Start to initilze the file system.
 	stream = fopen( "SDisk.dat", "r+b");
-	if( stream == NULL )//打不开文件
+    // Disk file not found.
+	if( stream == NULL )
 	{
-		fprintf( stdout, "磁盘不存在，重新生成\n" );
+		fprintf( stdout, "Disk not found.\n" );
 		stream = fopen( "SDisk.dat", "wb+");
-		printf("正在格式化，请稍等...\n");
+		printf("Formatting, please wait ...\n");
 		formating();
-		printf("格式化完毕！\n");
+		printf("Done!\n");
 		
 	}
 	fclose(stream);
 	stream = fopen( "SDisk.dat", "r+b");
 	initial();
 	sprintf(path,"%s",">ROOT");
+    
+    // Initialization complete!
 	while(1)
 	{
 		printf("\n");
 		printf("%s#",path);
 		scanf("%s",cm);
-
+        // exit command
 		if(!strcmp(cm,"exit"))
 		{
 			fseek(stream,CLUSTER*(ZERO_C+current_cluster),SEEK_SET);
-			fwrite(buff,CHAR_S,CLUSTER,stream);				//必须为read，因为修改了多个cluster
+            // Read only, because the this action modifies multiple cluster
+			fwrite(buff,CHAR_S,CLUSTER,stream);
 			fseek(stream,CLUSTER*FLAG,SEEK_SET);
 			fwrite(clusterFlag, CHAR_S, 2*CLUSTER, stream);
 			break;
 		}
+        
+        // General command process
 		else
 		{
-			if(!strcmp(cm,"dir"))
+			if(!strcmp(cm,"dir") || !strcmp(cm,"ls"))
 			{
 				fetch();
 			}
@@ -49,7 +58,7 @@ int main( void )
 				scanf("%s",cm);
 				if(strlen(cm)>8)
 				{
-					printf("文件名太长了，将缩短文件名\n");
+					printf("File name is too long, name will be truncated.\n");
 					memcpy(name,cm,7*CHAR_S);
 					name[7] = '~';
 				}
@@ -59,7 +68,7 @@ int main( void )
 				free_index = findFreeIndex();
 				if(free_index == -1 || free_cluster == -1)
 				{
-					printf("Sorry,本目录下最多只能存30个文件或者空间不足了\n");
+					printf("Error, this category can store up to 30 files or not enough freespace.\n");
 				}
 				else
 				{
@@ -69,9 +78,10 @@ int main( void )
 					makeFile(ZERO_C+free_cluster,ZERO_C+current_cluster,"..","",0,1,0);
 				}
 
-				//更新当前buff
+				// Update the current buff
 				fseek(stream,CLUSTER*(ZERO_C+current_cluster),SEEK_SET);
-				fread(buff,CHAR_S,CLUSTER,stream);				//必须为read，因为修改了多个cluster
+                // Read only, because the this action modifies multiple cluster
+				fread(buff,CHAR_S,CLUSTER,stream);
 				fseek(stream,CLUSTER*FLAG,SEEK_SET);
 				fwrite(clusterFlag, CHAR_S, 2*CLUSTER, stream);
 			}
@@ -80,10 +90,10 @@ int main( void )
 				scanf("%s",cm);
 				if(!del_Folder(cm,current_cluster+ZERO_C))
 				{
-					printf("文件不存在\n");
+					printf("File does not exist.\n");
 				}
 				else
-					printf("删完了！！\n");
+					printf("Done!\n");
 				fseek(stream,CLUSTER*(ZERO_C+current_cluster),SEEK_SET);
 				fread(buff,CHAR_S,CLUSTER,stream);	
 			}
@@ -93,14 +103,14 @@ int main( void )
 				flag = find_Index(cm);
 				if(!flag)
 				{
-					printf("文件\"%s\"不存在，请重新输入\n",cm);
+					printf("Folder \"%s\" does not exists, please reenter folder name.\n",cm);
 					continue;
 				}
 				current_cluster = flag-ZERO_C;
-				//更新当前buff
+				// Update the current buff
 				fseek(stream,CLUSTER*(ZERO_C+current_cluster),SEEK_SET);
 				fread(buff,CHAR_S,CLUSTER,stream);
-				//更新路径path
+				// Update path path
 				if(!strcmp(cm,".."))
 				{
 					getParent(path);
@@ -115,14 +125,14 @@ int main( void )
 					continue;
 				if(strlen(extend)>3)
 				{
-					printf("非法后缀\n");
+					printf("Illegal suffix\n");
 					continue;
 				}
 				free_cluster = findFreeCluster();
 				free_index = findFreeIndex();
 				if(free_index == -1 || free_cluster == -1)
 				{
-					printf("Sorry,本目录下最多只能存30个文件或者空间不足了\n");
+					printf("Error, this category can store up to 30 files or not enough freespace.\n");
 				}
 				else
 				{
@@ -130,7 +140,8 @@ int main( void )
 					makeFile(ZERO_C+current_cluster,ZERO_C+free_cluster,name,extend,0,free_index,size);
 				}
 				fseek(stream,CLUSTER*(ZERO_C+current_cluster),SEEK_SET);
-				fread(buff,CHAR_S,CLUSTER,stream);				//必须为read，因为修改了很多个cluster
+                // Read only, because the this action modifies multiple cluster
+				fread(buff,CHAR_S,CLUSTER,stream);
 				fseek(stream,CLUSTER*1,SEEK_SET);
 				fwrite(FAT_IN_MEMORY,CHAR_S*2,CLUSTER*125/2,stream);
 				fseek(stream,CLUSTER*FLAG,SEEK_SET);
@@ -142,7 +153,7 @@ int main( void )
 				if(!cut_Name(cm,name,extend))
 					continue;
 				delCurrentFile(name,extend,current_cluster+ZERO_C);
-				//更新当前
+				// Update the current FAT table
 				fseek(stream,CLUSTER*(ZERO_C+current_cluster),SEEK_SET);
 				fread(buff,CHAR_S,CLUSTER,stream);
 				fseek(stream,CLUSTER*1,SEEK_SET);
@@ -158,7 +169,7 @@ int main( void )
 				flag = find_File(name,extend);
 				if(!flag)
 				{
-					printf("文件\"%s\"不存在，请重新输入\n",cm);
+					printf("File \"%s\" does not exists, please reenter file name.\n",cm);
 					continue;
 				}
 				scanf("%s",cm);
@@ -176,9 +187,9 @@ int main( void )
 			{
 				fclose(stream);
 				stream = freopen( "SDisk.dat", "w+", stderr);
-				printf("正在格式化，请稍等...\n");
+				printf("Formatting, please wait ... \n");
 				formating();
-				printf("格式化完毕！\n");
+				printf("Done!\n");
 				fclose(stream);
 				stream = freopen( "SDisk.dat", "r+", stderr);
 				initial();
@@ -186,7 +197,7 @@ int main( void )
 			}
 			else
 			{
-				printf("不存在\"%s\"这样的命令\n",cm);
+				printf("Command \"%s\" not found!\n",cm);
 				fflush(stdin);
 			}
 		}
@@ -194,61 +205,78 @@ int main( void )
 	fclose( stream );
 	return 0;
 }
-void delCurrentFile(char *name,char *extend,int cur_cluster)//这里删除就不能使用当前路径了，需要相对路径
+// Delete file with the soft link
+void delCurrentFile(char *name,char *extend,int cur_cluster)
 {
 	int flag;
-	flag = del_Index_Soft(name,extend,cur_cluster);			//相对
+    // Delete in FAT table(soft link)
+	flag = del_Index_Soft(name,extend,cur_cluster);
 	if(!flag)
 	{
-		printf("文件\"%s.%s\"不存在，请重新输入\n",name,extend);
+		printf("File \"%s.%s\" does not exists, please reenter file name.\n",name,extend);
 		return;
 	}
-	del_File(flag-ZERO_C);								//绝对
+    // Delete in Disk (hard link)
+	del_File(flag-ZERO_C);
 }
-int del_Folder(char *name_in,int cur_cluster)//这里删除就不能使用当前路径了，需要相对路径
+// Delete folder with the soft link
+int del_Folder(char *name_in,int cur_cluster)
 {
 	int i;
-	char buff[CLUSTER];//相对
+    // Soft link
+	char buff[CLUSTER];
 	char name[INDEXNAMELEN+1];
 	char extend[EXTENDLEN+1];
 	char attribute;
-	int next_cluster;//相对
-	fseek(stream,cur_cluster*CLUSTER,SEEK_SET);//相对
+    // Soft link
+	int next_cluster;
+    // Soft link
+	fseek(stream,cur_cluster*CLUSTER,SEEK_SET);
 	fread(buff,CHAR_S,CLUSTER,stream);
-	for(i = INDEXSIZE*2; i < CLUSTER;i+=INDEXSIZE)		//前面两个"." ".."文件夹不可以删
+    // The first two ".." folder should not be deleted
+	for(i = INDEXSIZE*2; i < CLUSTER;i+=INDEXSIZE)
 	{
 		getMsgName(&buff[i],name);
 		attribute = getMsgAttr(&buff[i]);
 		if( strlen(name) > 0 && !( attribute & ATTR_DELETED ) && !strcmp(name,name_in) )
 		{
 			buff[i+11] |= ATTR_DELETED;
-			next_cluster = getMsgCluster_Soft(buff,i);		//相对
-			setNumVacant(next_cluster);					//绝对
-			fseek(stream,cur_cluster*CLUSTER+i,SEEK_SET);//相对
+            // Hard link
+            next_cluster = getMsgCluster_Soft(buff,i);
+            // Hard link
+			setNumVacant(next_cluster);
+            // Soft link
+			fseek(stream,cur_cluster*CLUSTER+i,SEEK_SET);
 			fwrite(&buff[i],CHAR_S,INDEXSIZE,stream);
-			return del_All(next_cluster);				//相对
+            // Soft link
+			return del_All(next_cluster);
 		}
 	}
 	
 	return 0;
 }
-int del_All(int cur_cluster)//这里删除就不能使用当前路径了，需要相对路径
+// Delete file with the hard link
+int del_All(int cur_cluster)
 {
 	int i;
 	int flag;
-	char buff[CLUSTER];									//相对
+    // Soft link
+	char buff[CLUSTER];
 	char name[INDEXNAMELEN+1];
 	char extend[EXTENDLEN+1];
-	char attribute;	
-	fseek(stream,cur_cluster*CLUSTER,SEEK_SET);			//相对
-	fread(buff,CHAR_S,CLUSTER,stream);			
-	for(i = INDEXSIZE*2; i < CLUSTER;i+=INDEXSIZE)		//前面两个"." ".."文件夹不可以删
+	char attribute;
+    // Soft link
+	fseek(stream,cur_cluster*CLUSTER,SEEK_SET);
+	fread(buff,CHAR_S,CLUSTER,stream);
+    // The first two ".." folder should not be deleted
+	for(i = INDEXSIZE*2; i < CLUSTER;i+=INDEXSIZE)
 	{
 		getMsgName(&buff[i],name);
 		attribute = getMsgAttr(&buff[i]);
 		if( strlen(name) > 0 && !( attribute & ATTR_DELETED ) )
 		{
-			flag = getMsgSize_Soft(buff,i);					//相对
+            // Soft link
+			flag = getMsgSize_Soft(buff,i);
 			if(flag > 0)
 			{
 				getMsgExtend(&buff[i+8],extend);
@@ -260,6 +288,7 @@ int del_All(int cur_cluster)//这里删除就不能使用当前路径了，需�
 	}
 	return 1;
 }
+
 int find_File(char *name_in, char *extend_in)
 {
 	int i;
@@ -290,7 +319,7 @@ void copyFile(char *to_name,int next_cluster,int size)
 	free_index = findFreeIndex();
 	if(free_index == -1 || free_cluster == -1)
 	{
-		printf("Sorry,本目录下最多只能存30个文件或者空间不足了\n");
+		printf("Error, this category can store up to 30 files or not enough freespace.\n");
 	}
 	else
 	{
@@ -316,7 +345,7 @@ int cut_Name(char *cm, char* name, char *extend)
 	}
 	else if(len == -1)
 	{
-		printf("文件名\"%s\"错误，缺少后缀！\n",cm);
+		printf("File \"%s\" error, cannot find the suffix!\n",cm);
 		return 0;
 	}
 	else
@@ -326,22 +355,25 @@ int cut_Name(char *cm, char* name, char *extend)
 	memcpy( extend, &cm[len+1],(strlen(cm)-len-1)*CHAR_S );
 	return 1;
 }
+// display FAT table
 void showFAT()
 {
 	int i;
-	for(i = 0; i < 2*CLUSTER; i+=2)															//显示FAT表大小
+	for(i = 0; i < 2*CLUSTER; i+=2)
 	{
 		printf("%X ",*(short *)&FAT_IN_MEMORY[i]);
 	}
 }
+// display BMP table
 void showBMP()
 {
 	int i;
-	for(i = 0; i < 2*CLUSTER; i+=4)															//显示BMP表大小
+	for(i = 0; i < 2*CLUSTER; i+=4)
 	{
 		printf("%X ",*(int *)&clusterFlag[i]);
 	}
 }
+
 int del_File(unsigned short cluster)
 {
 	if(*(short *)&FAT_IN_MEMORY[cluster*2] == -1)
@@ -356,6 +388,7 @@ int del_File(unsigned short cluster)
 	}
 	return 1;
 }
+
 int getMsgSize_Soft(char *buff,int i)
 {
 	return *(int *)(&buff[i+28]);
@@ -382,7 +415,8 @@ int find_File_Size(char *name_in, char *extend_in)
 	}
 	return 0;
 }
-int del_Index_Soft(char *name_in, char *extend_in, int cur_cluster)	//相对
+// Delete an index in FAT table with the soft link
+int del_Index_Soft(char *name_in, char *extend_in, int cur_cluster)
 {
 	int i;
 	char buff[CLUSTER];
@@ -399,7 +433,8 @@ int del_Index_Soft(char *name_in, char *extend_in, int cur_cluster)	//相对
 		if( strlen(name) > 0 && !( attribute & ATTR_DELETED ) && !strcmp(name,name_in) && !strcmp(extend,extend_in) )
 		{
 			buff[i+11] |= ATTR_DELETED;
-			fseek(stream,cur_cluster*CLUSTER+i,SEEK_SET);//相对
+            // Soft link
+			fseek(stream,cur_cluster*CLUSTER+i,SEEK_SET);
 			fwrite(&buff[i],CHAR_S,INDEXSIZE,stream);
 			return getMsgCluster_Soft(buff,i);
 		}
@@ -407,6 +442,8 @@ int del_Index_Soft(char *name_in, char *extend_in, int cur_cluster)	//相对
 	
 	return 0;
 }
+
+// Delete an index in FAT table
 int del_Index(char *name_in, char *extend_in)
 {
 	int i;
@@ -426,6 +463,8 @@ int del_Index(char *name_in, char *extend_in)
 	}
 	return 0;
 }
+
+// Find a index in FAT table
 int find_Index(char *index)
 {
 	int i;
@@ -440,6 +479,8 @@ int find_Index(char *index)
 	}
 	return 0;
 }
+
+// Set free space table(clusterFlag) "num" cluster are free
 int setNumVacant(int num)
 {
 	int offset,bit;
@@ -452,6 +493,8 @@ int setNumVacant(int num)
 	clusterFlag[offset] &= ~ini;
 	return 0;
 }
+
+// Get the parent path
 void getParent(char *input)
 {
 	int i,len;
@@ -463,7 +506,9 @@ void getParent(char *input)
 	}
 	input[i] = 0;
 }
-int findFreeIndex()//必须从第三个index开始找
+
+// Find the free cluster starting from the third cluster
+int findFreeIndex()
 {
 	int i;
 	char attribute;
@@ -477,7 +522,9 @@ int findFreeIndex()//必须从第三个index开始找
 	}
 	return -1;
 }
-int findFreeCluster()//返回逻辑上的第n个空盘，需要+ZERO_C
+
+// Find the cluster that is free in the clusterFlag table
+int findFreeCluster()
 {
 	int i,j;
 	char bit;
@@ -536,11 +583,11 @@ void printspace(int a)
 }
 void head()
 {
-	printf("文件名");
+	printf("Name");
 	printspace(20-6);
-	printf("文件类型");
+	printf("Types");
 	printspace(20-7);
-	printf("大小");
+	printf("Size");
 	printf("\n");
 }
 void fetch()
@@ -556,7 +603,8 @@ void fetch()
 		attribute = getMsgAttr(&buff[i]);
 		if(strlen(name) > 0 && !( attribute & ATTR_DELETED ))
 		{
-			printf("%s",name);//输出格式dir
+            // Print with format
+			printf("%s",name);
 			getMsgExtend(&buff[i+8],extend);
 			if(*(int *)(&buff[i+28]) > 0 && strlen(extend)>0)
 			{
@@ -591,15 +639,17 @@ int formating()
 {
 	int i;
 	char *ini;
-	//申请一个簇大小的内存空间
+	// Apply for a cluster of memory size
 	ini = (char *)malloc(CLUSTER);
-	memset(ini,0,CLUSTER*CHAR_S);//全部0
+    // Reset all disk to zeros
+	memset(ini,0,CLUSTER*CHAR_S);
+    // Global variable "stream" for disk read and write
 	for(i = 0; i < CLUSTER_NUM; i++)
-		fwrite( ini, sizeof( char ), CLUSTER, stream );//stream全局变量
+		fwrite( ini, sizeof( char ), CLUSTER, stream );
 	free(ini);
-	//初始化第0个盘块
-	fseek(stream,0,SEEK_SET);//fseek是按字节移动，移动光标
-	ini = "FAT32 1024 10240 戴瑞康 2012/5/22";
+	// Initilize the 0 cluster
+	fseek(stream,0,SEEK_SET);
+	ini = "FAT32 1024 10240 RuikangDai 2015/5/2";
 	fwrite( ini, CHAR_S, strlen(ini) , stream);
 	initial();
 	setNumUse(ZERO_C);
@@ -619,9 +669,10 @@ void getTime(char *hms, char *ym)
 	ym[0] = (tms->tm_year<<1)|(tms->tm_mon>>3);
 	ym[1] = (tms->tm_mon<<5)|(tms->tm_mday);
 }
-//构造文件目录麻烦
-//顺序:char name[8],char extend[3],char attribute,char backup[2],char mtime_h_m_s[2],char mtime_y_m[2],char view_y_m[2]
-//char from_h[2],char modify_h_m_s[2],char modify_y_m[2],char from_l[2],char size[4]
+
+//Organization:char name[8],char extend[3],char attribute,
+//             char backup[2],char mtime_h_m_s[2],char mtime_y_m[2],char view_y_m[2]
+//             char from_h[2],char modify_h_m_s[2],char modify_y_m[2],char from_l[2],char size[4]
 int makeFile(int cluster_no,int cluster_no_to,char *FolderName,char *extend,char attribute,int index_no,int size)
 {
 	 
@@ -660,7 +711,7 @@ void alloc_FileSpace(unsigned short next_cluster,int size)
 		*(unsigned short *)&FAT_IN_MEMORY[next_cluster*2] = findFreeCluster();
 		if((int)*(unsigned short *)&FAT_IN_MEMORY[next_cluster*2] == -1)
 		{
-			printf("空间不足，无法创建文件\n");
+			printf("No enough space to create a new file.\n");
 			fseek(stream,CLUSTER,SEEK_SET);
 			fread(FAT_IN_MEMORY,CHAR_S*2,CLUSTER*125/2,stream);
 			fseek(stream,CLUSTER*FLAG,SEEK_SET);
@@ -680,7 +731,7 @@ void alloc_FileSpace(unsigned short next_cluster,int size)
 void writeMsg(unsigned int cluster_no,int size)
 {
 	char *ini;
-	//申请一个size大小的内存空间
+	// Apply a free space in disk that is greater than size
 	ini = (char *)malloc(size);
 	fseek(stream,cluster_no*CLUSTER,SEEK_SET);
 	fwrite( ini, CHAR_S, size, stream);
