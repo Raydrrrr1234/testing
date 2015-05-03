@@ -45,7 +45,7 @@ int main( void )
 			break;
 		}
         
-        // General command process
+        // General command of system calls
 		else
 		{
 			if(!strcmp(cm,"dir") || !strcmp(cm,"ls"))
@@ -123,7 +123,7 @@ int main( void )
 				scanf("%s%d",cm,&size);
 				if(!cut_Name(cm,name,extend))
 					continue;
-				if(strlen(extend)>3)
+				if(strlen(extend)>3 && strlen(extend) == 0)
 				{
 					printf("Illegal suffix\n");
 					continue;
@@ -556,7 +556,7 @@ void initial()
 	fseek(stream,CLUSTER*(ZERO_C+current_cluster),SEEK_SET);
 	fread(buff,CHAR_S,CLUSTER,stream);	
 }
-int getMsgCluster_Soft(char *buff,int i)	//相对
+int getMsgCluster_Soft(char *buff,int i)
 {
 	char tmp[4];
 	tmp[3]= (buff[i+20] << 24);
@@ -565,7 +565,7 @@ int getMsgCluster_Soft(char *buff,int i)	//相对
 	tmp[0]= (buff[i+27]);
 	return *(int *)tmp;
 }
-int getMsgCluster(int i)//位运算转换
+int getMsgCluster(int i)
 {
 	char tmp[4];
 	tmp[3]= (buff[i+20] << 24);
@@ -584,7 +584,7 @@ void printspace(int a)
 void head()
 {
 	printf("Name");
-	printspace(20-6);
+	printspace(20-5);
 	printf("Types");
 	printspace(20-7);
 	printf("Size");
@@ -673,7 +673,8 @@ void getTime(char *hms, char *ym)
 //Organization:char name[8],char extend[3],char attribute,
 //             char backup[2],char mtime_h_m_s[2],char mtime_y_m[2],char view_y_m[2]
 //             char from_h[2],char modify_h_m_s[2],char modify_y_m[2],char from_l[2],char size[4]
-int makeFile(int cluster_no,int cluster_no_to,char *FolderName,char *extend,char attribute,int index_no,int size)
+int makeFile(int cluster_no,int cluster_no_to,char *FolderName,char
+             *extend,char attribute,int index_no,int size)
 {
 	 
 	char buff_t[32];
