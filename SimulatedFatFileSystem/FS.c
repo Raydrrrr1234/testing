@@ -172,6 +172,8 @@ int main( void )
 					printf("File \"%s\" does not exists, please reenter file name.\n",cm);
 					continue;
 				}
+                else
+                    printf("File found!");
 				scanf("%s",cm);
 				copyFile(cm,flag-ZERO_C,find_File_Size(name,extend));
 			}
@@ -182,7 +184,7 @@ int main( void )
 			else if(!strcmp(cm,"ShowFAT")||!strcmp(cm,"sft"))
 			{
 				showFAT();
-			}
+			} 
 			else if(!strcmp(cm,"formatdisk")||!strcmp(cm,"fd"))
 			{
 				fclose(stream);
@@ -313,8 +315,10 @@ void copyFile(char *to_name,int next_cluster,int size)
 	char name[INDEXNAMELEN+1];
 	char extend[EXTENDLEN+1];
 	int free_cluster,free_index;
-	if(!cut_Name(to_name,name,extend))
+    if(!cut_Name(to_name,name,extend)) {
+        printf("Error, fail to separate file name!");
 			return;
+    }
 	free_cluster = findFreeCluster();
 	free_index = findFreeIndex();
 	if(free_index == -1 || free_cluster == -1)
@@ -410,6 +414,7 @@ int find_File_Size(char *name_in, char *extend_in)
 		getMsgExtend(&buff[i+8],extend);
 		if( strlen(name) > 0 && !( attribute & ATTR_DELETED ) && !strcmp(name,name_in) && !strcmp(extend,extend_in) )
 		{
+            printf("Fetch data size Okay");
 			return getMsgSize(i);
 		}
 	}
@@ -464,7 +469,7 @@ int del_Index(char *name_in, char *extend_in)
 	return 0;
 }
 
-// Find a index in FAT table
+// Find a entry in current folder
 int find_Index(char *index)
 {
 	int i;
